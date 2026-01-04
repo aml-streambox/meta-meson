@@ -5,7 +5,7 @@ LIC_FILES_CHKSUM = "file://LICENSE;md5=89102645b0eb821092d21e630940cd21"
 DEPENDS = "go-native"
 
 SRC_URI = "git://github.com/patrickmn/cpuburn.git;protocol=https"
-SRCREV = "master"
+SRCREV = "22e952bd10f63f083ef62704505bfdedcc00233e"
 
 S = "${WORKDIR}/git"
 
