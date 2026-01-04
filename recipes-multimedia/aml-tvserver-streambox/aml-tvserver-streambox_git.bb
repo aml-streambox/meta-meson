@@ -1,11 +1,12 @@
-SUMMARY = "aml tvserver"
+SUMMARY = "aml tvserver streambox"
 
 LICENSE = "AMLOGIC"
 LIC_FILES_CHKSUM = "file://${COREBASE}/../meta-meson/license/AMLOGIC;md5=6c70138441c57c9e1edb9fde685bd3c8"
 
-SRC_URI = "file:///home/anshi/temp/yocto/aml_tvserver_streambox"
-SRC_URI += "file://tvserver.service"
-PV = "0.2"
+SRC_URI = "git://git@192.168.12.166/streambox/aml_tvserver_streambox.git;protocol=ssh;branch=streambox_v0.2"
+SRCREV = "dc8dd7b1314eee7fc663fe18b36a2d47d137400d"
+PV = "0.2+git${SRCPV}"
+SRC_URI +="file://tvserver.service"
 
 DEPENDS = " libbinder sqlite3 aml-audio-service"
 DEPENDS += "linux-uapi-headers"
@@ -32,13 +33,9 @@ do_install() {
     install -m 0644 ${S}/client/include/*.h ${D}${includedir}
     if [ "${@bb.utils.contains("DISTRO_FEATURES", "systemd", "yes", "no", d)}" = "yes"  ]; then
         install -D -m 0644 ${WORKDIR}/tvserver.service ${D}${systemd_unitdir}/system/tvserver.service
-        #install -D -m 0644 ${WORKDIR}/hdcprx.service ${D}${systemd_unitdir}/system/hdcprx.service
     fi
-    #install ${WORKDIR}/hdcp_rx22 ${D}${bindir}
-
 }
 SYSTEMD_SERVICE:${PN} = "tvserver.service "
-#SYSTEMD_SERVICE:${PN} = "tvserver.service hdcprx.service"
 
 FILES:${PN} = "${libdir}/* ${bindir}/*"
 FILES:${PN}-dev = "${includedir}/* "
