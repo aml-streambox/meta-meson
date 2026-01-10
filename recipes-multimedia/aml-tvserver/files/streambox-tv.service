@@ -1,0 +1,14 @@
+[Unit]
+Description=StreamBox TV HDMI Passthrough
+After=tvserver.service
+Requires=tvserver.service
+
+[Service]
+User=system
+AmbientCapabilities=CAP_DAC_OVERRIDE
+CapabilityBoundingSet=CAP_DAC_OVERRIDE
+ExecStart=/usr/bin/streambox-tv
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

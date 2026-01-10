@@ -4,9 +4,10 @@ LICENSE = "AMLOGIC"
 LIC_FILES_CHKSUM = "file://${COREBASE}/../meta-meson/license/AMLOGIC;md5=6c70138441c57c9e1edb9fde685bd3c8"
 
 SRC_URI = "git://git@192.168.12.166/streambox/aml_tvserver_streambox.git;protocol=ssh;branch=streambox_v0.2"
-SRCREV = "2e7f1c0e32ce50175e3f90c1553a7c087a5d5563"
+SRCREV = "96ec3035bfc8d8321e4b2ab7cda89c54db2baf85"
 PV = "0.2+git${SRCPV}"
 SRC_URI +="file://tvserver.service"
+SRC_URI +="file://streambox-tv.service"
 
 DEPENDS = " libbinder sqlite3 aml-audio-service"
 DEPENDS += "linux-uapi-headers"
@@ -33,9 +34,10 @@ do_install() {
     install -m 0644 ${S}/client/include/*.h ${D}${includedir}
     if [ "${@bb.utils.contains("DISTRO_FEATURES", "systemd", "yes", "no", d)}" = "yes"  ]; then
         install -D -m 0644 ${WORKDIR}/tvserver.service ${D}${systemd_unitdir}/system/tvserver.service
+        install -D -m 0644 ${WORKDIR}/streambox-tv.service ${D}${systemd_unitdir}/system/streambox-tv.service
     fi
 }
-SYSTEMD_SERVICE:${PN} = "tvserver.service "
+SYSTEMD_SERVICE:${PN} = "tvserver.service streambox-tv.service"
 
 FILES:${PN} = "${libdir}/* ${bindir}/*"
 FILES:${PN}-dev = "${includedir}/* "

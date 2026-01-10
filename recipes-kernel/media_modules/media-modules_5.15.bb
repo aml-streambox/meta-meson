@@ -223,6 +223,8 @@ MODULE_AUTOLOAD_ZAPPER_SKIP = "\
 KERNEL_MODULE_AUTOLOAD:remove = "${@bb.utils.contains('DISTRO_FEATURES', 'zapper', '${MODULE_AUTOLOAD_ZAPPER_SKIP}', '', d)}"
 
 KERNEL_MODULE_PROBECONF += "amvdec_ports amvdec_mh264"
+KERNEL_MODULE_PROBECONF:append:t7 = " amvenc_multi"
 module_conf_amvdec_ports = "options amvdec_ports multiplanar=1 vp9_need_prefix=1 av1_need_prefix=1"
 module_conf_amvdec_mh264 = "options amvdec_mh264 error_proc_policy=8376310"
+module_conf_amvenc_multi = "options amvenc_multi clock_a=666666666 clock_b=666666666 clock_c=666666666"
 INSANE_SKIP:${PN} = "installed-vs-shipped"
