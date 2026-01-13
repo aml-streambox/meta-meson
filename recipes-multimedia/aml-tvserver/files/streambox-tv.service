@@ -1,12 +1,15 @@
 [Unit]
 Description=StreamBox TV HDMI Passthrough
-After=tvserver.service
+# Start late after all core services and hardware are ready
+After=tvserver.service multi-user.target sound.target
 Requires=tvserver.service
 
 [Service]
 User=system
 AmbientCapabilities=CAP_DAC_OVERRIDE
 CapabilityBoundingSet=CAP_DAC_OVERRIDE
+# Add 3 second delay to ensure VPU/encoder hardware is ready
+ExecStartPre=/bin/sleep 3
 ExecStart=/usr/bin/streambox-tv
 Restart=on-failure
 
