@@ -3,7 +3,8 @@ LICENSE = "CLOSED"
 
 SRC_URI += "file://wifi-ap.service \
             file://entropy.bin \
-            file://wifi_ap_init"
+            file://wifi_ap_init \
+            file://dnsmasq_wrapper.sh"
 
 SYSTEMD_AUTO_ENABLE = "enable"
 
@@ -12,15 +13,17 @@ inherit systemd
 RDEPENDS:${PN} += "aml-utils-wifi-power "
 
 SYSTEMD_SERVICE:${PN} = "wifi-ap.service"
-FILES:${PN} += "${systemd_unitdir}/system/wifi-ap.service"
+FILES:${PN} += "${systemd_unitdir}/system/wifi-ap.service ${bindir}/dnsmasq_wrapper.sh"
 
 do_install() {
     install -d ${D}/${sysconfdir}/wifi
+    install -d ${D}${bindir}
 
     install -d ${D}${systemd_unitdir}/system
     install -m 0644 ${WORKDIR}/wifi-ap.service ${D}${systemd_unitdir}/system
     install -m 0644 ${WORKDIR}/entropy.bin ${D}${sysconfdir}
     install -m 0777 ${WORKDIR}/wifi_ap_init ${D}/${sysconfdir}/wifi
+    install -m 0755 ${WORKDIR}/dnsmasq_wrapper.sh ${D}${bindir}/dnsmasq_wrapper.sh
 
     if ${@bb.utils.contains("DISTRO_FEATURES", "softap", "true", "false", d)}; then
         sed -i '/Before=systemd-networkd.service/a After=wifi.service' ${D}${systemd_unitdir}/system/wifi-ap.service

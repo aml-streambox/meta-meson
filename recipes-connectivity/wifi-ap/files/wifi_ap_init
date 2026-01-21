@@ -10,9 +10,20 @@ NAME2=dnsmasq
 DAEMON2=/usr/bin/$NAME2
 PIDFILE2=/var/run/$NAME2.pid
 
+# Config file for custom AP settings
+AP_CONFIG_FILE=/etc/wifi/ap_config
 
 ap_name_file=/etc/wifi/ap_name
+
+# Load custom config if it exists
+load_config() {
+	if [ -f "$AP_CONFIG_FILE" ]; then
+		. "$AP_CONFIG_FILE"
+	fi
+}
+
 function hostapd_conf(){
+	# Generate default AP name from MAC address
 	while true
 	do
 		cat /sys/class/net/$1/address | sed 's/\://g' > /etc/wifi/ap_name
@@ -21,15 +32,21 @@ function hostapd_conf(){
 		fi
 	done
 	ap_name=`cat /etc/wifi/ap_name`
-	ssid=amlogic-audio-$ap_name
-	password=12345678
+	
+	# Load custom config
+	load_config
+	
+	# Use config values with fallbacks to defaults
+	ssid="${SSID:-streambox-setup-$ap_name}"
+	password="${PASSWORD:-streambox}"
+	channel="${CHANNEL:-36}"
 
 	echo 0 > /etc/hostapd_temp.conf
 	echo "interface=$1" > /etc/hostapd_temp.conf
 	echo "driver=nl80211" >> /etc/hostapd_temp.conf
 	echo "ctrl_interface=/var/run/hostapd" >> /etc/hostapd_temp.conf
 	echo "ssid=${ssid}" >> /etc/hostapd_temp.conf
-	echo "channel=36" >> /etc/hostapd_temp.conf
+	echo "channel=${channel}" >> /etc/hostapd_temp.conf
 #	echo "op_class=119" >> /etc/hostapd_temp.conf
 	echo "ieee80211n=1" >> /etc/hostapd_temp.conf
 	echo "ieee80211ac=1" >> /etc/hostapd_temp.conf
@@ -47,9 +64,31 @@ function hostapd_conf(){
 
 function hostapd_conf_pre()
 {
+	# Load config for IP address
+	load_config
+	ip_address="${IP_ADDRESS:-192.168.172.1}"
+	
 	hostapd_conf $1
 	hostapd /etc/hostapd_temp.conf -e /etc/entropy.bin &
-	ifconfig $1 192.168.2.1
+	
+	# Wait a moment for hostapd to initialize
+	sleep 1
+	
+	ifconfig $1 ${ip_address}
+	
+	# Start dnsmasq with dynamic configuration via wrapper script
+	if [ -x /usr/bin/dnsmasq_wrapper.sh ]; then
+		echo "Starting dnsmasq via wrapper script..."
+		/usr/bin/dnsmasq_wrapper.sh $1 &
+	else
+		echo "Warning: dnsmasq_wrapper.sh not found, using fallback"
+		# Fallback: calculate DHCP range manually
+		subnet_prefix=$(echo "$ip_address" | sed 's/\.[0-9]*$//')
+		/usr/bin/dnsmasq -x /run/dnsmasq.pid -i $1 \
+			--dhcp-option=3,${ip_address} \
+			--dhcp-range=${subnet_prefix}.50,${subnet_prefix}.200,12h \
+			-p100 &
+	fi
 }
 
 function wifi_init(){
