@@ -1,0 +1,95 @@
+From bfd8f17419c52fb0c8f8ad004a9f48838f4d503e Mon Sep 17 00:00:00 2001
+From: anshi <anshi@cosmiccat.net>
+Date: Sat, 7 Mar 2026 00:19:30 +0800
+Subject: [PATCH] Add AMLOGIC_YUV422_10BIT_PACKED format support
+
+---
+ sys/v4l2/ext/videodev2.h     |  3 +++
+ sys/v4l2/gstv4l2bufferpool.c | 13 +++++++++++++
+ sys/v4l2/gstv4l2object.c     | 11 +++++++++++
+ 3 files changed, 27 insertions(+)
+
+diff --git a/sys/v4l2/ext/videodev2.h b/sys/v4l2/ext/videodev2.h
+index 76b022b..77c04c0 100644
+--- a/sys/v4l2/ext/videodev2.h
++++ b/sys/v4l2/ext/videodev2.h
+@@ -605,6 +605,9 @@ struct v4l2_pix_format {
+ /* 10-bit YUV 4:2:0 format (P010) - used for HDR video */
+ #define V4L2_PIX_FMT_P010    v4l2_fourcc('P', '0', '1', '0') /* 24  Y/CbCr 4:2:0 10-bit */
+ 
++/* Amlogic VDIN 40-bit packed YUV422 10-bit format */
++#define V4L2_PIX_FMT_AMLOGIC_YUV422_10BIT_PACKED  v4l2_fourcc('A', 'M', 'L', 'Y')
++
+ /* three planes - Y Cb, Cr */
+ #define V4L2_PIX_FMT_YUV410  v4l2_fourcc('Y', 'U', 'V', '9') /*  9  YUV 4:1:0     */
+ #define V4L2_PIX_FMT_YVU410  v4l2_fourcc('Y', 'V', 'U', '9') /*  9  YVU 4:1:0     */
+diff --git a/sys/v4l2/gstv4l2bufferpool.c b/sys/v4l2/gstv4l2bufferpool.c
+index 00cc102..2ecc5c4 100644
+--- a/sys/v4l2/gstv4l2bufferpool.c
++++ b/sys/v4l2/gstv4l2bufferpool.c
+@@ -2204,6 +2204,19 @@ gst_v4l2_buffer_pool_process (GstV4l2BufferPool * pool, GstBuffer ** buf,
+             gst_buffer_resize (*buf, 0, pool->caps_info.width * pool->caps_info.height * 3);
+           }
+ 
++          /* Handle AMLOGIC_YUV422_10BIT_PACKED format buffer resize for DMABUF */
++          if (obj->mode == GST_V4L2_IO_DMABUF && pool->caps_info.finfo &&
++              GST_VIDEO_FORMAT_ENCODED == pool->caps_info.finfo->format)
++          {
++            gsize expected_size = (pool->caps_info.width * pool->caps_info.height * 5) / 2;
++            gsize current_size = gst_buffer_get_size (*buf);
++            if (current_size > expected_size)
++            {
++              GST_DEBUG_OBJECT (pool, "resizebuf AMLOGIC_YUV422_10BIT_PACKED");
++              gst_buffer_resize (*buf, 0, expected_size);
++            }
++          }
++
+           /* an queue the buffer again after the copy */
+           gst_v4l2_buffer_pool_complete_release_buffer (bpool, tmp, FALSE);
+ 
+diff --git a/sys/v4l2/gstv4l2object.c b/sys/v4l2/gstv4l2object.c
+index 0bfd4a1..971e7aa 100644
+--- a/sys/v4l2/gstv4l2object.c
++++ b/sys/v4l2/gstv4l2object.c
+@@ -164,6 +164,9 @@ static const GstV4L2FormatDesc gst_v4l2_formats[] = {
+   /* 10-bit YUV 4:2:0 format for HDR */
+   {V4L2_PIX_FMT_P010, TRUE, GST_V4L2_RAW},
+ 
++  /* Amlogic VDIN 40-bit packed YUV422 10-bit format */
++  {V4L2_PIX_FMT_AMLOGIC_YUV422_10BIT_PACKED, TRUE, GST_V4L2_RAW},
++
+   /* Bayer formats - see http://www.siliconimaging.com/RGB%20Bayer.htm */
+   {V4L2_PIX_FMT_SBGGR8, TRUE, GST_V4L2_RAW},
+   {V4L2_PIX_FMT_SGBRG8, TRUE, GST_V4L2_RAW},
+@@ -1422,6 +1425,9 @@ gst_v4l2_object_v4l2fourcc_to_video_format (guint32 fourcc)
+     case V4L2_PIX_FMT_P010:
+       format = GST_VIDEO_FORMAT_P010_10LE;
+       break;
++    case V4L2_PIX_FMT_AMLOGIC_YUV422_10BIT_PACKED:
++      format = GST_VIDEO_FORMAT_ENCODED;
++      break;
+     default:
+       format = GST_VIDEO_FORMAT_UNKNOWN;
+       break;
+@@ -1558,6 +1564,7 @@ gst_v4l2_object_v4l2fourcc_to_bare_struct (guint32 fourcc)
+     case V4L2_PIX_FMT_NV61M:
+     case V4L2_PIX_FMT_NV24:    /* 24  Y/CrCb 4:4:4  */
+     case V4L2_PIX_FMT_P010:    /* 24  Y/CbCr 4:2:0 10-bit */
++    case V4L2_PIX_FMT_AMLOGIC_YUV422_10BIT_PACKED:
+     case V4L2_PIX_FMT_YVU410:
+     case V4L2_PIX_FMT_YUV410:
+     case V4L2_PIX_FMT_YUV420:  /* I420/IYUV */
+@@ -1850,6 +1857,10 @@ gst_v4l2_object_get_caps_info (GstV4l2Object * v4l2object, GstCaps * caps,
+         fourcc = V4L2_PIX_FMT_P010;
+         fourcc_nc = V4L2_PIX_FMT_P010;
+         break;
++      case GST_VIDEO_FORMAT_ENCODED:
++        fourcc = V4L2_PIX_FMT_AMLOGIC_YUV422_10BIT_PACKED;
++        fourcc_nc = V4L2_PIX_FMT_AMLOGIC_YUV422_10BIT_PACKED;
++        break;
+       case GST_VIDEO_FORMAT_YVYU:
+         fourcc = V4L2_PIX_FMT_YVYU;
+         break;
+-- 
+2.34.1
+

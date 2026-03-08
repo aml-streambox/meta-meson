@@ -33,5 +33,7 @@ SRC_URI += "file://00040-fix-webm-drm-support.patch"
 SRC_URI += "file://00041-SWPL-149025-refine-mp4-dv-parameter.patch"
 SRC_URI += "file://0009-qtdemux-switch-AV-stream-by-pts.patch "
 SRC_URI += "file://00027-resize-gstbuffer-for-NV12-and-NV21.patch "
+SRC_URI += "file://0042-add-P010-10bit-HDR-format-support.patch"
+SRC_URI += "file://0043-add-AMLOGIC_YUV422_10BIT_PACKED-format-support.patch"
 
 PACKAGECONFIG[v4l2] = "-Dv4l2=enabled -Dv4l2-probe=false"

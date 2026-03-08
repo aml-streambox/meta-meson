@@ -1,0 +1,99 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Developer <developer@amlogic.com>
+Date: Sat, 28 Feb 2026 21:00:00 +0800
+Subject: [PATCH] v4l2: Add P010 10-bit HDR format support
+
+Add support for P010 10-bit YUV 4:2:0 format used for HDR video capture.
+This format is required for HDR10 video processing pipeline.
+
+Changes:
+- Add V4L2_PIX_FMT_P010 fourcc definition to videodev2.h
+- Add P010 to supported formats list in gstv4l2object.c
+- Add format conversion for P010 to GST_VIDEO_FORMAT_P010_10LE
+- Add P010 to gst_v4l2_object_v4l2fourcc_to_bare_struct()
+- Add reverse mapping from GST_VIDEO_FORMAT_P010_10LE to V4L2_PIX_FMT_P010
+- Add fourcc_nc for P010 to enable multi-plane support
+- Add P010 DMABUF buffer resize support in bufferpool
+
+Signed-off-by: Developer <developer@amlogic.com>
+---
+ sys/v4l2/ext/videodev2.h      |  3 +++
+ sys/v4l2/gstv4l2bufferpool.c | 11 +++++++++++
+ sys/v4l2/gstv4l2object.c     | 14 ++++++++++++++
+ 3 files changed, 28 insertions(+)
+
+--- a/sys/v4l2/ext/videodev2.h
++++ b/sys/v4l2/ext/videodev2.h
+@@ -602,6 +602,9 @@
+ #define V4L2_PIX_FMT_NV16M   v4l2_fourcc('N', 'M', '1', '6') /* 16  Y/CbCr 4:2:2  */
+ #define V4L2_PIX_FMT_NV61M   v4l2_fourcc('N', 'M', '6', '1') /* 16  Y/CrCb 4:2:2  */
+ 
++/* 10-bit YUV 4:2:0 format (P010) - used for HDR video */
++#define V4L2_PIX_FMT_P010    v4l2_fourcc('P', '0', '1', '0') /* 24  Y/CbCr 4:2:0 10-bit */
++
+ /* three planes - Y Cb, Cr */
+ #define V4L2_PIX_FMT_YUV410  v4l2_fourcc('Y', 'U', 'V', '9') /*  9  YUV 4:1:0     */
+ #define V4L2_PIX_FMT_YVU410  v4l2_fourcc('Y', 'V', 'U', '9') /*  9  YVU 4:1:0     */
+--- a/sys/v4l2/gstv4l2bufferpool.c
++++ b/sys/v4l2/gstv4l2bufferpool.c
+@@ -2220,6 +2220,17 @@ gst_v4l2_buffer_pool_release_buffer (GstBufferPool * bpool, GstBuffer * buffer)
+ 
+           ret = gst_v4l2_buffer_pool_copy_buffer (pool, *buf, tmp);
+ 
++          /* Handle P010 format buffer resize for DMABUF */
++          if (obj->mode == GST_V4L2_IO_DMABUF && 
++              GST_VIDEO_FORMAT_P010_10LE == pool->caps_info.finfo->format &&
++              gst_buffer_get_size (*buf) > (pool->caps_info.width * pool->caps_info.height * 3))
++          {
++            GST_DEBUG_OBJECT (pool, "resizebuf P010. format:%d W:%d, H:%d", 
++                pool->caps_info.finfo->format, pool->caps_info.width, pool->caps_info.height);
++            gst_buffer_resize (*buf, 0, pool->caps_info.width * pool->caps_info.height * 3);
++          }
++
++          /* Handle NV12/NV21 format buffer resize for DMABUF */
+           if (obj->mode == GST_V4L2_IO_DMABUF && (GST_VIDEO_FORMAT_NV12 == pool->caps_info.finfo->format || GST_VIDEO_FORMAT_NV21 == pool->caps_info.finfo->format) && gst_buffer_get_size (*buf) > (pool->caps_info.width * pool->caps_info.height * 3 / 2))
+           {
+             GST_DEBUG_OBJECT (pool, "resizebuf. format:%d [%d, %d] W:%d, H:%d", pool->caps_info.finfo->format, GST_VIDEO_FORMAT_NV12, GST_VIDEO_FORMAT_NV21, pool->caps_info.width, pool->caps_info.height);
+--- a/sys/v4l2/gstv4l2object.c
++++ b/sys/v4l2/gstv4l2object.c
+@@ -161,6 +161,9 @@ static const GstV4L2FormatDesc gst_v4l2_formats[] = {
+   {V4L2_PIX_FMT_NV24, TRUE, GST_V4L2_RAW},
+   {V4L2_PIX_FMT_NV42, TRUE, GST_V4L2_RAW},
+ 
++  /* 10-bit YUV 4:2:0 format for HDR */
++  {V4L2_PIX_FMT_P010, TRUE, GST_V4L2_RAW},
++
+   /* Bayer formats - see http://www.siliconimaging.com/RGB%20Bayer.htm */
+   {V4L2_PIX_FMT_SBGGR8, TRUE, GST_V4L2_RAW},
+   {V4L2_PIX_FMT_SGBRG8, TRUE, GST_V4L2_RAW},
+@@ -1433,6 +1436,9 @@ gst_v4l2_object_v4l2fourcc_to_video_format (guint32 fourcc)
+     case V4L2_PIX_FMT_NV24:
+       format = GST_VIDEO_FORMAT_NV24;
+       break;
++    case V4L2_PIX_FMT_P010:
++      format = GST_VIDEO_FORMAT_P010_10LE;
++      break;
+     default:
+       format = GST_VIDEO_FORMAT_UNKNOWN;
+       break;
+@@ -1572,6 +1578,7 @@ gst_v4l2_object_v4l2fourcc_to_bare_struct (guint32 fourcc)
+     case V4L2_PIX_FMT_NV61:    /* 16  Y/CrCb 4:2:2  */
+     case V4L2_PIX_FMT_NV61M:
+     case V4L2_PIX_FMT_NV24:    /* 24  Y/CrCb 4:4:4  */
++    case V4L2_PIX_FMT_P010:    /* 24  Y/CbCr 4:2:0 10-bit */
+     case V4L2_PIX_FMT_YVU410:
+     case V4L2_PIX_FMT_YUV410:
+     case V4L2_PIX_FMT_YUV420:  /* I420/IYUV */
+@@ -1860,6 +1867,10 @@ gst_v4l2_object_get_caps_info (GstV4l2Object * v4l2object, GstCaps * caps,
+       case GST_VIDEO_FORMAT_NV24:
+         fourcc = V4L2_PIX_FMT_NV24;
+         break;
++      case GST_VIDEO_FORMAT_P010_10LE:
++        fourcc = V4L2_PIX_FMT_P010;
++        fourcc_nc = V4L2_PIX_FMT_P010;
++        break;
+       case GST_VIDEO_FORMAT_YVYU:
+         fourcc = V4L2_PIX_FMT_YVYU;
+         break;
+-- 
+2.34.1
