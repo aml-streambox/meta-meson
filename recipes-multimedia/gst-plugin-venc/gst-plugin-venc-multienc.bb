@@ -6,6 +6,8 @@ LIC_FILES_CHKSUM = "file://${COREBASE}/../meta-meson/license/AMLOGIC;md5=6c70138
 DEPENDS += "gstreamer1.0 gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-libav"
 DEPENDS += "libion"
 DEPENDS += "libmultienc"
+DEPENDS += "virtual/egl virtual/libgles2 wayland"
+DEPENDS += "vulkan-headers vulkan-loader"
 
 inherit autotools pkgconfig
 
