@@ -1,0 +1,3 @@
+# Create /dev/video_cap symlink for vfm_cap V4L2 device
+# Match by driver attribute in sysfs (v4l2 video devices report their driver name)
+SUBSYSTEM=="video4linux", ATTR{name}=="vfm_cap", SYMLINK+="video_cap", MODE="0660", GROUP="video"
