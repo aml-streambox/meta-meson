@@ -27,4 +27,4 @@ do_install() {
 FILES:${PN} = " ${libdir}/libvfmcap.so ${bindir}/vfmcap-demo "
 FILES:${PN}-dev = " ${includedir}/* "
 
-INSANE_SKIP:${PN} = "dev-so"
+INSANE_SKIP:${PN} = "dev-so useless-rpaths"
