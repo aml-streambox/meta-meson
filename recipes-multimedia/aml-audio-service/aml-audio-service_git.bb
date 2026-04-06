@@ -88,8 +88,10 @@ EOF
                 fi
             fi
 
-            install -d ${D}${sysconfdir}/init.d
-            install -m 0755 ${WORKDIR}/audioserver.init ${D}${sysconfdir}/init.d/audioserver
+            if ${@bb.utils.contains('DISTRO_FEATURES', 'disable-audioserver-init', 'false', 'true', d)}; then
+                install -d ${D}${sysconfdir}/init.d
+                install -m 0755 ${WORKDIR}/audioserver.init ${D}${sysconfdir}/init.d/audioserver
+            fi
         else
             install -m 644 -D ${B}/libamlaudiosetting.so -t ${D}${libdir}
             install -m 644 -D ${S}/include/AML_Audio_Setting.h -t ${D}/usr/include
