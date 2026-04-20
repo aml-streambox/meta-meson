@@ -1,0 +1,55 @@
+From ad7f477ea704c92dc84bcd50f8109440837e0aec Mon Sep 17 00:00:00 2001
+From: Builder <builder@local>
+Date: Tue, 21 Apr 2026 00:04:46 +0800
+Subject: [PATCH] guard bootloader env writes with dry_run check in
+ stream_interface
+
+---
+ core/stream_interface.c | 23 +++++++++++++----------
+ 1 file changed, 13 insertions(+), 10 deletions(-)
+
+diff --git a/core/stream_interface.c b/core/stream_interface.c
+index 095e20c0..64f3537c 100644
+--- a/core/stream_interface.c
++++ b/core/stream_interface.c
+@@ -309,7 +309,8 @@ static int extract_files(int fd, struct swupdate_cfg *software)
+ 				break;
+ 			case INSTALL_FROM_STREAM:
+ 				bootloader_env_init();
+-				bootloader_env_set("recovery_status", "in_progress");
++				if (!software->parms.dry_run)
++					bootloader_env_set("recovery_status", "in_progress");
+ 				TRACE("Installing STREAM %s, %lld bytes", img->fname, img->size);
+ 
+ 				/*
+@@ -730,16 +731,18 @@ void *network_initializer(void *data)
+ 					notify(SUCCESS, RECOVERY_NO_ERROR, INFOLEVEL, "SWUPDATE successful !");
+ 					inst.last_install = SUCCESS;
+ 
+-					//for amlogic kernel 5.15, need set write_boot 1, next boot will load new bootloader form /dev/bootloader_up
+-					if ( !access("/dev/bootloader_up",0)){
+-						bootloader_env_set("write_boot", "1");
+-					}
++					if (!software->parms.dry_run) {
++						//for amlogic kernel 5.15, need set write_boot 1, next boot will load new bootloader form /dev/bootloader_up
++						if ( !access("/dev/bootloader_up",0)){
++							bootloader_env_set("write_boot", "1");
++						}
+ 
+-					if (get_system_type() == 0) {
+-						int slot = 0;
+-						get_active_slot(&slot);
+-						slot = slot ? 0 : 1;
+-						set_active_slot(slot);
++						if (get_system_type() == 0) {
++							int slot = 0;
++							get_active_slot(&slot);
++							slot = slot ? 0 : 1;
++							set_active_slot(slot);
++						}
+ 					}
+ 				}
+ 			}
+-- 
+2.34.1
+

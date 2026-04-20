@@ -28,6 +28,7 @@ SRC_URI = "git://github.com/sbabic/swupdate.git;branch=master;protocol=https \
         file://0002-fix-compile-warnings.patch \
         file://0003-add-uboot-update-backup-write-for-nand.patch \
         file://0004-amlogic-fix-resource-leak.patch \
+        file://0008-swupdate-guard-bootloader-env-in-dry-run.patch \
         file://defconfig \
         file://hwrevision \
         file://sw-versions \
@@ -265,6 +266,7 @@ do_install () {
     sed 's@boardname@${MACHINE_ARCH}@' -i ${D}/etc/hwrevision
     sed 's@_lib32_@_@' -i ${D}/etc/hwrevision
     sed 's@_k5.15@@' -i ${D}/etc/hwrevision
+    awk '{gsub(/\./,"_",$1); print}' ${D}/etc/hwrevision > ${D}/etc/hwrevision.tmp && mv ${D}/etc/hwrevision.tmp ${D}/etc/hwrevision
 }
 
 SYSTEMD_PACKAGES = "${PN} ${PN}-progress"

@@ -210,6 +210,7 @@ do_aml_pack() {
 
         sed 's@version = \"1.0.1\"@version = \"1.0.1-'$(date "+%s")'\"@' -i ${DEPLOY_DIR_IMAGE}/sw-description
         sed 's@boardname@${MACHINE_ARCH}@' -i ${DEPLOY_DIR_IMAGE}/sw-description
+        sed -i '/^[[:space:]]*[a-z][a-z0-9_]*\.[a-z0-9]*[[:space:]]*=/{s@\.@_@g}' ${DEPLOY_DIR_IMAGE}/sw-description
         sed 's@_lib32_@_@' -i ${DEPLOY_DIR_IMAGE}/sw-description
         sed 's@_k5.15@@' -i ${DEPLOY_DIR_IMAGE}/sw-description
         if ${@bb.utils.contains('DISTRO_FEATURES', 'nand', 'false', 'true', d)}; then
