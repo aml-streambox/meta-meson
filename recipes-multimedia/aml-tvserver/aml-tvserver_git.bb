@@ -4,7 +4,7 @@ LICENSE = "AMLOGIC"
 LIC_FILES_CHKSUM = "file://${COREBASE}/../meta-meson/license/AMLOGIC;md5=6c70138441c57c9e1edb9fde685bd3c8"
 
 SRC_URI = "git://github.com/aml-streambox/aml_tvserver_streambox.git;protocol=https;branch=main"
-SRCREV = "678c41753a891004adbe1b67c155e7e7588de2e8"
+SRCREV = "9fc8bf022c2611ea62de930e22f0debbdf3dc2d8"
 PV = "0.4+git${SRCPV}"
 SRC_URI +="file://tvserver.service"
 SRC_URI +="file://streambox-tv.service"
