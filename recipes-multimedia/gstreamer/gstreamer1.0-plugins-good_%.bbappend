@@ -1,5 +1,10 @@
 FILESEXTRAPATHS:prepend := "${THISDIR}/gst1-plugins-good:"
 
+SRC_URI:remove = "https://gstreamer.freedesktop.org/src/gst-plugins-good/gst-plugins-good-${PV}.tar.xz"
+SRC_URI:prepend = "git://github.com/aml-streambox/gst-plugins-good.git;protocol=https;branch=streambox-1.20.7-h265-flvmux "
+SRCREV = "e9da0b700ce68eabf1427cf5276a84ba8de70299"
+S = "${WORKDIR}/git"
+
 SRC_URI += "file://0001-fix-gst-not-respect-buffer-config.patch"
 SRC_URI += "file://0004-support-event-and-dma.patch"
 SRC_URI += "file://0005-add-sinput-for-vdin.patch"
